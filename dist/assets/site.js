@@ -60,8 +60,8 @@ if (finePointer && !prefersReducedMotion) {
       const bounds = card.getBoundingClientRect();
       const relativeX = (event.clientX - bounds.left) / bounds.width - 0.5;
       const relativeY = (event.clientY - bounds.top) / bounds.height - 0.5;
-      card.style.setProperty("--rx", `${-relativeY * 3.3}deg`);
-      card.style.setProperty("--ry", `${relativeX * 3.3}deg`);
+      card.style.setProperty("--rx", `${-relativeY * 2}deg`);
+      card.style.setProperty("--ry", `${relativeX * 2}deg`);
     });
     card.addEventListener("pointerleave", () => {
       card.style.setProperty("--rx", "0deg");
@@ -125,6 +125,8 @@ function initializeHeroScene(THREE) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.98;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
@@ -138,34 +140,30 @@ function initializeHeroScene(THREE) {
   const shell = new THREE.Mesh(
     new THREE.IcosahedronGeometry(1.58, 4),
     new THREE.MeshPhysicalMaterial({
-      color: 0x2b8cff,
-      emissive: 0x0d62e4,
-      emissiveIntensity: 0.24,
-      metalness: 0.09,
-      roughness: 0.16,
-      transparent: true,
-      opacity: 0.56,
-      transmission: 0.12,
-      thickness: 0.6,
-      clearcoat: 0.8,
-      clearcoatRoughness: 0.12,
+      color: 0x0c0a06,
+      emissive: 0x120a03,
+      emissiveIntensity: 0.11,
+      metalness: 0.9,
+      roughness: 0.29,
+      clearcoat: 0.24,
+      clearcoatRoughness: 0.24,
     })
   );
   core.add(shell);
 
   const meshLines = new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.61, 3)),
-    new THREE.LineBasicMaterial({ color: 0xdaf1ff, transparent: true, opacity: 0.45 })
+    new THREE.LineBasicMaterial({ color: 0xc9a45d, transparent: true, opacity: 0.36 })
   );
   core.add(meshLines);
 
   const interior = new THREE.Mesh(
     new THREE.IcosahedronGeometry(0.76, 2),
-    new THREE.MeshBasicMaterial({ color: 0xf4fbff, transparent: true, opacity: 0.76, wireframe: true })
+    new THREE.MeshStandardMaterial({ color: 0xc7a35f, metalness: 0.78, roughness: 0.36, transparent: true, opacity: 0.48, wireframe: true })
   );
   core.add(interior);
 
-  const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x75b9ff, transparent: true, opacity: 0.56 });
+  const ringMaterial = new THREE.MeshStandardMaterial({ color: 0xb88939, metalness: 0.9, roughness: 0.27, transparent: true, opacity: 0.56 });
   const makeRing = (radius, tube, rotation, position = [0, 0, 0]) => {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 10, 110), ringMaterial);
     ring.rotation.set(...rotation);
@@ -173,13 +171,16 @@ function initializeHeroScene(THREE) {
     core.add(ring);
     return ring;
   };
-  const ringOne = makeRing(2.08, 0.012, [1.31, -0.35, 0.14]);
-  const ringTwo = makeRing(1.92, 0.008, [0.76, 0.78, -0.88]);
-  const ringThree = makeRing(2.48, 0.006, [1.12, 0.15, 0.56]);
+  const ringOneBase = [1.31, -0.35, 0.14];
+  const ringTwoBase = [0.76, 0.78, -0.88];
+  const ringThreeBase = [1.12, 0.15, 0.56];
+  const ringOne = makeRing(2.08, 0.012, ringOneBase);
+  const ringTwo = makeRing(1.92, 0.008, ringTwoBase);
+  const ringThree = makeRing(2.48, 0.006, ringThreeBase);
 
   const particleGeometry = new THREE.BufferGeometry();
   const points = [];
-  const particleCount = 255;
+  const particleCount = 144;
   for (let index = 0; index < particleCount; index += 1) {
     const radius = 2.75 + Math.random() * 1.85;
     const theta = Math.random() * Math.PI * 2;
@@ -192,19 +193,18 @@ function initializeHeroScene(THREE) {
   }
   particleGeometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
   const particles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({
-    color: 0x5baaff, size: 0.027, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false,
+    color: 0xaa813a, size: 0.016, transparent: true, opacity: 0.45, depthWrite: false,
   }));
-  particles.position.x = 1.92;
-  scene.add(particles);
+  core.add(particles);
 
-  const ambient = new THREE.AmbientLight(0xb9deff, 1.4);
+  const ambient = new THREE.HemisphereLight(0x2c2417, 0x020201, 0.45);
   scene.add(ambient);
-  const keyLight = new THREE.PointLight(0xb8e3ff, 20, 12, 2);
+  const keyLight = new THREE.PointLight(0xffe1aa, 20, 12, 2);
   keyLight.position.set(-2.8, 3.6, 4.7);
   scene.add(keyLight);
-  const blueLight = new THREE.PointLight(0x126dff, 18, 10, 2);
-  blueLight.position.set(4.4, -1.8, 3.3);
-  scene.add(blueLight);
+  const rimLight = new THREE.PointLight(0xb98632, 16, 11, 2);
+  rimLight.position.set(4.4, -1.8, 3.3);
+  scene.add(rimLight);
 
   const pointer = { x: 0, y: 0 };
   const target = { x: 0, y: 0 };
@@ -213,7 +213,11 @@ function initializeHeroScene(THREE) {
     target.x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
     target.y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
   };
-  window.addEventListener("pointermove", onPointerMove, { passive: true });
+  hero.addEventListener("pointermove", onPointerMove, { passive: true });
+  hero.addEventListener("pointerleave", () => {
+    target.x = 0;
+    target.y = 0;
+  }, { passive: true });
 
   const resize = () => {
     const { width, height } = hero.getBoundingClientRect();
@@ -244,15 +248,13 @@ function initializeHeroScene(THREE) {
     pointer.x += (target.x - pointer.x) * 0.042;
     pointer.y += (target.y - pointer.y) * 0.042;
     const scrollPhase = Math.min(window.scrollY / Math.max(hero.offsetHeight, 1), 1);
-    core.rotation.y += 0.0017;
-    core.rotation.x += 0.00055;
-    core.rotation.y += pointer.x * 0.0015;
-    core.rotation.x += -pointer.y * 0.001;
+    core.rotation.y = 0.35 + time * 0.00022 + pointer.x * 0.1;
+    core.rotation.x = -0.2 + Math.sin(time * 0.00019) * 0.04 - pointer.y * 0.07;
     core.position.x = 1.92 + pointer.x * 0.16;
     core.position.y = 0.05 - pointer.y * 0.15 - scrollPhase * 0.22;
-    ringOne.rotation.z = time * 0.00012;
-    ringTwo.rotation.z = -time * 0.00017;
-    ringThree.rotation.z = time * 0.00009;
+    ringOne.rotation.z = ringOneBase[2] + time * 0.00012;
+    ringTwo.rotation.z = ringTwoBase[2] - time * 0.00017;
+    ringThree.rotation.z = ringThreeBase[2] + time * 0.00009;
     interior.rotation.set(-time * 0.00023, time * 0.00031, 0);
     particles.rotation.y = time * 0.000025;
     particles.rotation.x = Math.sin(time * 0.00017) * 0.12;
